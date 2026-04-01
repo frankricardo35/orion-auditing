@@ -2,16 +2,40 @@
 
 `orion-audit` is a Spring Boot auditing starter for JPA applications.
 
-It lets you:
+It is inspired by Laravel Auditing’s model-level auditing approach and brings the same idea to Spring Boot starter conventions.
 
-- mark an entity with `@Audited`
+With `orion-audit`, you can:
+
+- mark entities with `@Audited`
 - automatically record `INSERT`, `UPDATE`, and `DELETE`
-- store audit records in a database table
-- capture actor and request metadata
-- query audit records from your application
-- resolve one or many actor types such as `users` and `customers`
+- capture field-level changes and metadata
+- persist audit rows in a database table
+- query audit records from application code
+- resolve one actor type or many actor types such as `users` and `customers`
+- use Hibernate listeners for better dirty tracking while keeping JPA fallback support
 
-This library is built as a starter, so application code should usually depend on `orion-audit-starter`.
+## Table Of Contents
+
+- [What You Get By Default](#what-you-get-by-default)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Maven](#maven)
+- [Gradle](#gradle)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Copy-Paste Starter Configs](#copy-paste-starter-configs)
+- [Common Configuration Examples](#common-configuration-examples)
+- [Polymorphic Actors](#polymorphic-actors)
+- [How Table Creation Works](#how-table-creation-works)
+- [Configuration Reference](#configuration-reference)
+- [Annotations](#annotations)
+- [Stored Audit Fields](#stored-audit-fields)
+- [Reading Audit Records](#reading-audit-records)
+- [Extension Points](#extension-points)
+- [Driver Options](#driver-options)
+- [Demo](#demo)
+- [Troubleshooting](#troubleshooting)
+- [Build](#build)
 
 ## What You Get By Default
 
@@ -22,22 +46,26 @@ If you add the starter and annotate an entity:
 - the audit table name is `audit_log`
 - the audit table is created automatically on startup if it does not already exist
 - Spring Security actor resolution is used when available
-- actor rows already store `actor_id`, `actor_name`, and `actor_type`
+- actor rows store `actor_id`, `actor_name`, and `actor_type`
 - HTTP request metadata is captured when available
 - Hibernate listener mode is used when Hibernate is present
 
-In other words, the normal happy path should work without extra setup.
+The normal happy path should work without extra setup.
 
 ## Requirements
 
 - Java 17+
 - Spring Boot 4.x
 - Spring Data JPA
-- A configured datasource
+- a configured datasource
 
 ## Installation
 
-### Maven
+Application code should usually depend on `orion-audit-starter`.
+
+## Maven
+
+### Maven dependency
 
 ```xml
 <dependency>
@@ -47,13 +75,101 @@ In other words, the normal happy path should work without extra setup.
 </dependency>
 ```
 
-### Gradle
+### Maven snapshot repository
 
-```groovy
-implementation("io.orion.audit:orion-audit-starter:1.0.0-SNAPSHOT")
+Use this only while consuming a local or unpublished snapshot from a Maven repository manager.
+
+```xml
+<repositories>
+  <repository>
+    <id>snapshots</id>
+    <url>https://your-repository.example.com/maven-snapshots</url>
+  </repository>
+</repositories>
 ```
 
-## Fastest Way To Use It
+### Maven local snapshot usage
+
+If you are consuming the library from your local machine:
+
+```bash
+cd /absolute/path/to/orion-audit
+env -u JAVA_HOME mvn clean install
+```
+
+Then use the same version in your application `pom.xml`.
+
+## Gradle
+
+### Gradle Groovy DSL
+
+```groovy
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("io.orion.audit:orion-audit-starter:1.0.0-SNAPSHOT")
+}
+```
+
+### Gradle Kotlin DSL
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("io.orion.audit:orion-audit-starter:1.0.0-SNAPSHOT")
+}
+```
+
+### Gradle snapshot repository
+
+Use this only if the artifact is coming from a snapshot repository.
+
+Groovy DSL:
+
+```groovy
+repositories {
+    mavenCentral()
+    maven { url = uri("https://your-repository.example.com/maven-snapshots") }
+}
+```
+
+Kotlin DSL:
+
+```kotlin
+repositories {
+    mavenCentral()
+    maven(url = "https://your-repository.example.com/maven-snapshots")
+}
+```
+
+### Gradle local snapshot usage
+
+If the snapshot was installed with Maven on the same machine, Gradle can read it from `mavenLocal()`.
+
+Groovy DSL:
+
+```groovy
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+```
+
+Kotlin DSL:
+
+```kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+```
+
+## Quick Start
 
 ### 1. Add the dependency
 
@@ -90,17 +206,17 @@ public class Customer {
 
 That is enough for a basic setup.
 
-When your app starts:
+When your application starts:
 
 - the library auto-configures itself
 - the audit table is created if it does not exist
 - entity changes start being recorded
 
-## Minimal Configuration
+## Configuration
 
-You do not need any custom properties for the default setup.
+You do not need custom properties for the default setup.
 
-If you want to be explicit, this is a good starting point:
+If you want an explicit starting point, use:
 
 ```properties
 orion.audit.enabled=true
@@ -116,12 +232,195 @@ orion.audit.default-source=application
 orion.audit.prefer-json-column=true
 ```
 
+Equivalent `application.yml`:
+
+```yaml
+orion:
+  audit:
+    enabled: true
+    database-enabled: true
+    initialize-schema: true
+    table-name: audit_log
+    store-full-snapshot: false
+    store-empty-changes: false
+    fail-on-error: false
+    use-spring-security: true
+    capture-request-info: true
+    default-source: application
+    prefer-json-column: true
+```
+
+## Copy-Paste Starter Configs
+
+These examples are meant to be a fast starting point for new applications.
+
+### PostgreSQL
+
+`application.properties`
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/appdb
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=none
+
+orion.audit.enabled=true
+orion.audit.database-enabled=true
+orion.audit.initialize-schema=true
+orion.audit.table-name=audit_log
+orion.audit.listener-mode=auto
+orion.audit.use-spring-security=true
+orion.audit.capture-request-info=true
+orion.audit.default-source=application
+orion.audit.prefer-json-column=true
+```
+
+`application.yml`
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/appdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+orion:
+  audit:
+    enabled: true
+    database-enabled: true
+    initialize-schema: true
+    table-name: audit_log
+    listener-mode: auto
+    use-spring-security: true
+    capture-request-info: true
+    default-source: application
+    prefer-json-column: true
+```
+
+### MySQL
+
+`application.properties`
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/appdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=root
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.hibernate.ddl-auto=none
+
+orion.audit.enabled=true
+orion.audit.database-enabled=true
+orion.audit.initialize-schema=true
+orion.audit.table-name=audit_log
+orion.audit.listener-mode=auto
+orion.audit.use-spring-security=true
+orion.audit.capture-request-info=true
+orion.audit.default-source=application
+orion.audit.prefer-json-column=true
+```
+
+`application.yml`
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/appdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+orion:
+  audit:
+    enabled: true
+    database-enabled: true
+    initialize-schema: true
+    table-name: audit_log
+    listener-mode: auto
+    use-spring-security: true
+    capture-request-info: true
+    default-source: application
+    prefer-json-column: true
+```
+
+### H2
+
+`application.properties`
+
+```properties
+spring.datasource.url=jdbc:h2:mem:appdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+spring.datasource.username=sa
+spring.datasource.password=
+spring.datasource.driver-class-name=org.h2.Driver
+spring.jpa.hibernate.ddl-auto=none
+spring.h2.console.enabled=true
+
+orion.audit.enabled=true
+orion.audit.database-enabled=true
+orion.audit.initialize-schema=true
+orion.audit.table-name=audit_log
+orion.audit.listener-mode=auto
+orion.audit.use-spring-security=true
+orion.audit.capture-request-info=true
+orion.audit.default-source=application
+orion.audit.prefer-json-column=false
+```
+
+`application.yml`
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:appdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+  h2:
+    console:
+      enabled: true
+
+orion:
+  audit:
+    enabled: true
+    database-enabled: true
+    initialize-schema: true
+    table-name: audit_log
+    listener-mode: auto
+    use-spring-security: true
+    capture-request-info: true
+    default-source: application
+    prefer-json-column: false
+```
+
+Notes:
+
+- `initialize-schema=true` lets the library create the audit table automatically if it is missing
+- if you prefer Flyway-managed audit DDL, set `initialize-schema=false` and use the audit Flyway migration locations instead
+- `prefer-json-column=false` is a good default for H2 because it stores JSON-like payloads as CLOB
+
 ## Common Configuration Examples
 
 ### Change the audit table name
 
 ```properties
 orion.audit.table-name=audit_logs
+```
+
+### Use a schema
+
+```properties
+orion.audit.schema=audit
+orion.audit.table-name=audit_log
 ```
 
 ### Ignore fields globally
@@ -149,7 +448,44 @@ orion.audit.drivers[0]=DATABASE
 orion.audit.drivers[1]=LOGGING
 ```
 
-### Configure one actor type
+### Disable automatic table creation
+
+```properties
+orion.audit.initialize-schema=false
+```
+
+### Configure Flyway vendor override
+
+```properties
+orion.audit.flyway.enabled=true
+orion.audit.flyway.vendor=postgresql
+orion.audit.flyway.append-to-existing=true
+```
+
+### Add extra audit Flyway locations
+
+```properties
+orion.audit.flyway.locations[0]=classpath:db/migration/common
+orion.audit.flyway.locations[1]=classpath:db/migration/custom-audit
+```
+
+## Polymorphic Actors
+
+Laravel Auditing uses a morph-style `user_type` and `user_id` approach. In `orion-audit`, the equivalent columns are:
+
+- `actor_type`
+- `actor_id`
+- `actor_name`
+
+This allows one audit table to represent actions from different actor families such as:
+
+- `users`
+- `customers`
+- `admins`
+
+If you configure `orion.audit.actors`, the Spring Security resolver matches the authenticated principal and fills those actor columns from configured property paths.
+
+### One actor type
 
 ```properties
 orion.audit.actors[0].type=users
@@ -158,7 +494,7 @@ orion.audit.actors[0].id-property=id
 orion.audit.actors[0].name-property=fullName
 ```
 
-### Configure multiple actor types
+### Multiple actor types
 
 ```properties
 orion.audit.actors[0].type=users
@@ -172,95 +508,7 @@ orion.audit.actors[1].id-property=customerId
 orion.audit.actors[1].name-property=displayName
 ```
 
-### Use a schema
-
-```properties
-orion.audit.schema=audit
-orion.audit.table-name=audit_log
-```
-
-## How The Table Is Created
-
-There are two supported ways.
-
-### Option 1. Automatic startup creation
-
-This is the default behavior.
-
-If the audit table does not exist, the library creates it automatically on startup.
-
-This is controlled by:
-
-```properties
-orion.audit.initialize-schema=true
-```
-
-This is the easiest option if you just want the library to work.
-
-### Option 2. Flyway-managed creation
-
-The library also ships vendor-specific Flyway migrations.
-
-Locations:
-
-- `classpath:META-INF/orion-audit/db/migration/postgresql`
-- `classpath:META-INF/orion-audit/db/migration/mysql`
-- `classpath:META-INF/orion-audit/db/migration/h2`
-
-Use this option if your project wants audit table creation to be fully managed by Flyway.
-
-Important:
-
-- if you do not override `spring.flyway.locations`, the library can contribute its migration location automatically
-- if you do override `spring.flyway.locations`, you must include the audit migration location yourself
-
-Example:
-
-```properties
-spring.flyway.locations=classpath:db/migration,classpath:META-INF/orion-audit/db/migration/postgresql
-```
-
-## Important Properties
-
-| Property | Default | Meaning |
-| --- | --- | --- |
-| `orion.audit.enabled` | `true` | Turns the library on or off |
-| `orion.audit.database-enabled` | `true` | Keeps the database driver enabled |
-| `orion.audit.initialize-schema` | `true` | Creates the audit table automatically if missing |
-| `orion.audit.listener-mode` | `AUTO` | `AUTO`, `HIBERNATE`, or `JPA` |
-| `orion.audit.table-name` | `audit_log` | Audit table name |
-| `orion.audit.schema` | empty | Optional schema |
-| `orion.audit.store-full-snapshot` | `false` | Store full old/new maps instead of changed-only maps |
-| `orion.audit.store-empty-changes` | `false` | Store update audits even if nothing changed |
-| `orion.audit.fail-on-error` | `false` | Throw on audit failure instead of logging only |
-| `orion.audit.ignored-fields` | empty | Globally ignored field names |
-| `orion.audit.use-spring-security` | `true` | Resolve actor from Spring Security |
-| `orion.audit.capture-request-info` | `true` | Capture URI, method, IP, user agent, trace ID |
-| `orion.audit.default-source` | `application` | Default source label |
-| `orion.audit.prefer-json-column` | `true` | Prefer JSON-capable database column types |
-| `orion.audit.actors` | empty | Optional Spring Security actor mappings for one or many actor types |
-| `orion.audit.flyway.enabled` | `true` | Enable audit Flyway contribution |
-| `orion.audit.flyway.vendor` | `auto` | Vendor override for audit migrations |
-| `orion.audit.flyway.append-to-existing` | `true` | Append audit Flyway locations to existing locations |
-| `orion.audit.flyway.locations` | empty | Extra audit migration locations |
-
-## Polymorphic Actors
-
-Laravel Auditing uses a morph-style `user_type` and `user_id` approach. In `orion-audit`, the equivalent columns are:
-
-- `actor_type`
-- `actor_id`
-- `actor_name`
-
-This means one audit table can represent actions from different actor families such as:
-
-- `users`
-- `customers`
-- `admins`
-
-If you configure `orion.audit.actors`, the Spring Security resolver will match the authenticated principal class and populate those columns from the configured property paths.
-
-Example:
+### YAML example
 
 ```yaml
 orion:
@@ -279,18 +527,110 @@ orion:
 Notes:
 
 - `type` is what gets stored in `actor_type`
-- `principal-class` matches the authenticated Spring Security principal
-- `id-property` and `name-property` are bean property paths read from that principal
-- if you do not configure actors, the library keeps the old fallback behavior and uses `authentication.getName()`
-- if you configure one actor mapping without `principal-class`, it works as a default mapping for any authenticated principal
+- `principal-class` is the fully qualified class name of the authenticated Spring Security principal
+- `id-property` is the bean property path used for `actor_id`
+- `name-property` is the bean property path used for `actor_name`
+- `tenant-id-property` is optional and can be used to populate tenant context from the principal
+- if you do not configure actors, the library keeps the fallback behavior and uses `authentication.getName()`
+- if you configure one actor mapping without `principal-class`, that mapping acts as a default mapping for any authenticated principal
+
+## How Table Creation Works
+
+There are two supported approaches.
+
+### Option 1. Automatic startup creation
+
+This is the default behavior.
+
+If the audit table does not exist, the library creates it automatically on startup.
+
+```properties
+orion.audit.initialize-schema=true
+```
+
+This is the easiest option if you want the library to work without managing audit DDL yourself.
+
+### Option 2. Flyway-managed creation
+
+The library also ships vendor-specific Flyway migrations.
+
+Locations:
+
+- `classpath:META-INF/orion-audit/db/migration/postgresql`
+- `classpath:META-INF/orion-audit/db/migration/mysql`
+- `classpath:META-INF/orion-audit/db/migration/h2`
+
+Important:
+
+- if you do not override `spring.flyway.locations`, the library can contribute its migration location automatically
+- if you override `spring.flyway.locations`, include the library migration location yourself
+
+Example:
+
+```properties
+spring.flyway.locations=classpath:db/migration,classpath:META-INF/orion-audit/db/migration/postgresql
+```
+
+## Configuration Reference
+
+### Core properties
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `orion.audit.enabled` | `true` | Master switch for the library |
+| `orion.audit.database-enabled` | `true` | Backward-compatible toggle for the built-in database driver |
+| `orion.audit.listener-mode` | `AUTO` | `AUTO`, `HIBERNATE`, or `JPA` |
+| `orion.audit.table-name` | `audit_log` | Audit table name |
+| `orion.audit.schema` | empty | Optional schema name |
+| `orion.audit.store-full-snapshot` | `false` | Store full old/new maps instead of changed-only maps |
+| `orion.audit.store-empty-changes` | `false` | Persist update records even when no effective changes are detected |
+| `orion.audit.fail-on-error` | `false` | Throw audit failures instead of logging only |
+| `orion.audit.ignored-fields` | empty | Globally ignored field names |
+| `orion.audit.use-spring-security` | `true` | Resolve actor from Spring Security when available |
+| `orion.audit.capture-request-info` | `true` | Capture URI, method, IP, user agent, and trace id |
+| `orion.audit.default-source` | `application` | Default source label |
+| `orion.audit.prefer-json-column` | `true` | Prefer JSON-capable database column types when supported |
+| `orion.audit.initialize-schema` | `true` | Create the audit table automatically if missing |
+| `orion.audit.ddl-auto` | `none` | Optional Hibernate DDL override hook |
+
+### Driver properties
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `orion.audit.drivers` | empty | Explicit built-in drivers to enable |
+
+Supported driver values:
+
+- `DATABASE`
+- `LOGGING`
+
+If `drivers` is empty, existing users still get the default database behavior through `database-enabled=true`.
+
+### Actor properties
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `orion.audit.actors` | empty | Optional actor mapping list |
+| `orion.audit.actors[].type` | none | Stored value for `actor_type` |
+| `orion.audit.actors[].principal-class` | none | Fully qualified authenticated principal class name |
+| `orion.audit.actors[].id-property` | `id` | Principal property used for `actor_id` |
+| `orion.audit.actors[].name-property` | `name` | Principal property used for `actor_name` |
+| `orion.audit.actors[].tenant-id-property` | none | Optional principal property used for tenant id |
+
+### Flyway properties
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `orion.audit.flyway.enabled` | `true` | Enable audit Flyway location contribution |
+| `orion.audit.flyway.vendor` | `auto` | Vendor override for audit migrations |
+| `orion.audit.flyway.append-to-existing` | `true` | Append audit migration locations to existing Flyway locations |
+| `orion.audit.flyway.locations` | empty | Extra audit migration locations |
 
 ## Annotations
 
 ### `@Audited`
 
 Use it on an entity class.
-
-Example:
 
 ```java
 @Audited(
@@ -320,7 +660,7 @@ Use it to rename a field in the audit output.
 private String name;
 ```
 
-## What Gets Stored
+## Stored Audit Fields
 
 Each audit row contains:
 
@@ -349,8 +689,6 @@ Each audit row contains:
 
 Use `AuditQueryService`.
 
-Example:
-
 ```java
 import io.orion.audit.core.model.AuditAction;
 import io.orion.audit.core.query.AuditPageRequest;
@@ -360,6 +698,7 @@ import io.orion.audit.core.query.AuditQueryService;
 AuditQueryCriteria criteria = AuditQueryCriteria.builder()
     .entityType("com.example.Customer")
     .entityId("42")
+    .actorType("users")
     .actions(Set.of(AuditAction.UPDATE, AuditAction.DELETE))
     .build();
 
@@ -380,7 +719,7 @@ Supported filters:
 
 Default ordering is `createdAt DESC`.
 
-## Extending The Library
+## Extension Points
 
 ### Custom tags
 
@@ -443,7 +782,7 @@ orion.audit.drivers[1]=LOGGING
 
 ## Demo
 
-Run the demo app:
+Run the demo application:
 
 ```bash
 env -u JAVA_HOME mvn -pl orion-audit-demo spring-boot:run
@@ -469,7 +808,7 @@ curl http://localhost:8080/audit-logs
 
 ### The properties are not recognized in my IDE
 
-Make sure your application is using the latest built version of the library.
+Make sure your application uses the latest built version of the library.
 
 If you are using a local snapshot:
 
@@ -492,19 +831,15 @@ If you want Flyway to manage the table instead, include the library migration lo
 
 Configure `orion.audit.actors` and map each Spring Security principal class to the stored `actor_type`, `actor_id`, and `actor_name`.
 
-If your table already exists, no schema change is required because the library already stores:
-
-- `actor_id`
-- `actor_name`
-- `actor_type`
+If your table already exists, no schema change is required because the actor columns already exist.
 
 ### Audits are not being written
 
 Check:
 
 - your entity is annotated with `@Audited`
-- the entity is actually managed by JPA
-- you are performing insert, update, or delete through JPA/Hibernate
+- the entity is managed by JPA
+- insert, update, or delete is happening through JPA or Hibernate
 - auditing is enabled
 
 ## Build
