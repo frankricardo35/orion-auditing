@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_1.xsd"
+                 version="3.1">
+    <persistence-unit-metadata>
+        <persistence-unit-defaults>
+            <entity-listeners>
+                <entity-listener class="io.orion.audit.autoconfigure.listener.AuditEntityListener">
+                    <post-load method-name="onPostLoad"/>
+                    <post-persist method-name="onPostPersist"/>
+                    <pre-update method-name="onPreUpdate"/>
+                    <post-update method-name="onPostUpdate"/>
+                    <pre-remove method-name="onPreRemove"/>
+                    <post-remove method-name="onPostRemove"/>
+                </entity-listener>
+            </entity-listeners>
+        </persistence-unit-defaults>
+    </persistence-unit-metadata>
+</entity-mappings>

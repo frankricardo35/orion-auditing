@@ -1,0 +1,193 @@
+{
+  "groups": [
+    {
+      "name": "orion.audit",
+      "type": "io.orion.audit.autoconfigure.properties.AuditProperties",
+      "sourceType": "io.orion.audit.autoconfigure.properties.AuditProperties"
+    },
+    {
+      "name": "orion.audit.flyway",
+      "type": "io.orion.audit.autoconfigure.properties.AuditProperties$Flyway",
+      "sourceType": "io.orion.audit.autoconfigure.properties.AuditProperties",
+      "sourceMethod": "getFlyway()"
+    },
+    {
+      "name": "orion.audit.actors",
+      "type": "java.util.List<io.orion.audit.autoconfigure.properties.AuditProperties$Actor>",
+      "sourceType": "io.orion.audit.autoconfigure.properties.AuditProperties",
+      "sourceMethod": "getActors()"
+    }
+  ],
+  "properties": [
+    {
+      "name": "orion.audit.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Master switch for orion-audit."
+    },
+    {
+      "name": "orion.audit.database-enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Backward-compatible toggle for the built-in database driver."
+    },
+    {
+      "name": "orion.audit.listener-mode",
+      "type": "io.orion.audit.core.model.AuditListenerMode",
+      "defaultValue": "AUTO",
+      "description": "Listener mode: AUTO, HIBERNATE, or JPA."
+    },
+    {
+      "name": "orion.audit.drivers",
+      "type": "java.util.List<io.orion.audit.autoconfigure.properties.AuditDriverType>",
+      "description": "Explicit built-in drivers to enable."
+    },
+    {
+      "name": "orion.audit.actions",
+      "type": "java.util.Set<io.orion.audit.core.model.AuditAction>",
+      "description": "Globally enabled audit actions."
+    },
+    {
+      "name": "orion.audit.table-name",
+      "type": "java.lang.String",
+      "defaultValue": "audit_log",
+      "description": "Audit table name."
+    },
+    {
+      "name": "orion.audit.schema",
+      "type": "java.lang.String",
+      "description": "Optional schema prefix for the audit table."
+    },
+    {
+      "name": "orion.audit.store-full-snapshot",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Store full before and after snapshots instead of changed-only maps."
+    },
+    {
+      "name": "orion.audit.store-empty-changes",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Persist update events even when no effective field changes are detected."
+    },
+    {
+      "name": "orion.audit.fail-on-error",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Propagate audit write failures instead of logging them."
+    },
+    {
+      "name": "orion.audit.ignored-fields",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Global field names to exclude from auditing."
+    },
+    {
+      "name": "orion.audit.use-spring-security",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Use Spring Security to resolve actor information when available."
+    },
+    {
+      "name": "orion.audit.capture-request-info",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Capture servlet request metadata when available."
+    },
+    {
+      "name": "orion.audit.default-source",
+      "type": "java.lang.String",
+      "defaultValue": "application",
+      "description": "Fallback audit source label."
+    },
+    {
+      "name": "orion.audit.prefer-json-column",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Prefer JSON-capable database column types when supported."
+    },
+    {
+      "name": "orion.audit.initialize-schema",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Create the audit table automatically on startup if it does not already exist."
+    },
+    {
+      "name": "orion.audit.ddl-auto",
+      "type": "java.lang.String",
+      "defaultValue": "none",
+      "description": "Optional Hibernate DDL override."
+    },
+    {
+      "name": "orion.audit.actors",
+      "type": "java.util.List<io.orion.audit.autoconfigure.properties.AuditProperties$Actor>",
+      "description": "Optional polymorphic actor mappings used by the Spring Security actor resolver."
+    },
+    {
+      "name": "orion.audit.actors[].type",
+      "type": "java.lang.String",
+      "description": "Stored actor type, for example users or customers."
+    },
+    {
+      "name": "orion.audit.actors[].principal-class",
+      "type": "java.lang.String",
+      "description": "Fully qualified authenticated principal class name to match."
+    },
+    {
+      "name": "orion.audit.actors[].id-property",
+      "type": "java.lang.String",
+      "defaultValue": "id",
+      "description": "Bean property path to read the actor id from the authenticated principal."
+    },
+    {
+      "name": "orion.audit.actors[].name-property",
+      "type": "java.lang.String",
+      "defaultValue": "name",
+      "description": "Bean property path to read the actor name from the authenticated principal."
+    },
+    {
+      "name": "orion.audit.actors[].tenant-id-property",
+      "type": "java.lang.String",
+      "description": "Optional bean property path to read tenant id from the authenticated principal."
+    },
+    {
+      "name": "orion.audit.flyway.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Enable audit Flyway migration contribution."
+    },
+    {
+      "name": "orion.audit.flyway.vendor",
+      "type": "java.lang.String",
+      "defaultValue": "auto",
+      "description": "Database vendor override for audit migrations."
+    },
+    {
+      "name": "orion.audit.flyway.locations",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Additional audit migration locations to add after the vendor-specific location."
+    },
+    {
+      "name": "orion.audit.flyway.append-to-existing",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Append audit Flyway locations to the application's existing Flyway locations."
+    }
+  ],
+  "hints": [
+    {
+      "name": "orion.audit.listener-mode",
+      "values": [
+        { "value": "AUTO" },
+        { "value": "HIBERNATE" },
+        { "value": "JPA" }
+      ]
+    },
+    {
+      "name": "orion.audit.drivers",
+      "values": [
+        { "value": "DATABASE" },
+        { "value": "LOGGING" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: orion-audit-demo
+  datasource:
+    url: jdbc:h2:mem:orionaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  flyway:
+    enabled: true
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    io.orion.audit: DEBUG
+
+orion:
+  audit:
+    enabled: true
+    database-enabled: true
+    capture-request-info: true
+    use-spring-security: true
+    store-full-snapshot: false
+    store-empty-changes: false
+    default-source: demo-app
