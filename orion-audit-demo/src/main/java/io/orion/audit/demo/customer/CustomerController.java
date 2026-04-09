@@ -33,13 +33,13 @@ public class CustomerController {
     }
 
     @PutMapping("/customers/{id}")
-    public Customer update(@PathVariable Long id, @RequestBody UpdateCustomerRequest request) {
+    public Customer update(@PathVariable("id") Long id, @RequestBody UpdateCustomerRequest request) {
         return customerService.update(id, request);
     }
 
     @DeleteMapping("/customers/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable("id") Long id) {
         customerService.delete(id);
     }
 

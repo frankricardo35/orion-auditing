@@ -21,6 +21,8 @@ With `orion-audit`, you can:
 - [Installation](#installation)
 - [Maven](#maven)
 - [Gradle](#gradle)
+- [Publishing](#publishing)
+- [Consuming From GitHub Packages](#consuming-from-github-packages)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Copy-Paste Starter Configs](#copy-paste-starter-configs)
@@ -170,6 +172,167 @@ repositories {
     mavenCentral()
 }
 ```
+
+## Publishing
+
+This project is configured to publish to GitHub Packages.
+
+Configured package repository:
+
+- `https://maven.pkg.github.com/frankricardo35/orion-auditing`
+
+### 1. Create a GitHub personal access token
+
+Use a GitHub token that can publish and read packages for the target repository.
+
+Typical permissions:
+
+- `write:packages`
+- `read:packages`
+- `repo`
+
+### 2. Add Maven credentials
+
+Create or update `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_GITHUB_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
+
+The server id must be `github` because that matches this project’s `distributionManagement`.
+
+### 3. Publish the library
+
+From the project root:
+
+```bash
+env -u JAVA_HOME mvn clean deploy
+```
+
+This publishes:
+
+- `orion-audit-core`
+- `orion-audit-autoconfigure`
+- `orion-audit-starter`
+
+The demo module is part of the build, but the starter remains the main consumer entry point.
+
+### 4. Versioning note
+
+If other projects are going to consume the package from GitHub Packages, prefer a real release version instead of only `-SNAPSHOT` builds when possible.
+
+Example:
+
+```xml
+<version>1.0.0</version>
+```
+
+## Consuming From GitHub Packages
+
+Another project cannot consume this library from a normal GitHub source repository URL alone. It must use a package repository such as GitHub Packages, Maven Central, or JitPack.
+
+This project is currently set up for GitHub Packages.
+
+### Maven consumer setup
+
+Add the repository:
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/frankricardo35/orion-auditing</url>
+  </repository>
+</repositories>
+```
+
+Add the dependency:
+
+```xml
+<dependency>
+  <groupId>io.orion.audit</groupId>
+  <artifactId>orion-audit-starter</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+The consuming machine also needs a matching `~/.m2/settings.xml` entry:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_GITHUB_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
+
+### Gradle consumer setup
+
+Groovy DSL:
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/frankricardo35/orion-auditing")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("io.orion.audit:orion-audit-starter:1.0.0-SNAPSHOT")
+}
+```
+
+Kotlin DSL:
+
+```kotlin
+repositories {
+    mavenCentral()
+    maven(url = "https://maven.pkg.github.com/frankricardo35/orion-auditing") {
+        credentials {
+            username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_USERNAME")
+            password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("io.orion.audit:orion-audit-starter:1.0.0-SNAPSHOT")
+}
+```
+
+You can put credentials in `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=YOUR_GITHUB_USERNAME
+gpr.key=YOUR_GITHUB_TOKEN
+```
+
+### Recommended consumer dependency
+
+Use:
+
+- `io.orion.audit:orion-audit-starter`
+
+Do not depend on `orion-audit-demo`.
+
+Use `orion-audit-core` or `orion-audit-autoconfigure` directly only if you intentionally want a lower-level integration.
 
 ## Quick Start
 
