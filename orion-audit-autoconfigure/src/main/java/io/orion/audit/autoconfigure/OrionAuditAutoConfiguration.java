@@ -6,9 +6,9 @@ import io.orion.audit.autoconfigure.config.AuditFlywayAutoConfiguration;
 import io.orion.audit.autoconfigure.config.AuditJpaAutoConfiguration;
 import io.orion.audit.autoconfigure.properties.AuditProperties;
 import io.orion.audit.autoconfigure.resolver.DefaultEntityIdResolver;
+import io.orion.audit.autoconfigure.resolver.DefaultTenantResolver;
 import io.orion.audit.autoconfigure.resolver.NoopActorResolver;
 import io.orion.audit.autoconfigure.resolver.NoopRequestInfoResolver;
-import io.orion.audit.autoconfigure.resolver.NoopTenantResolver;
 import io.orion.audit.autoconfigure.resolver.ServletRequestInfoResolver;
 import io.orion.audit.autoconfigure.resolver.SpringSecurityActorResolver;
 import io.orion.audit.autoconfigure.service.AuditOrchestrator;
@@ -101,7 +101,7 @@ public class OrionAuditAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     TenantResolver tenantResolver() {
-        return new NoopTenantResolver();
+        return new DefaultTenantResolver();
     }
 
     @Bean

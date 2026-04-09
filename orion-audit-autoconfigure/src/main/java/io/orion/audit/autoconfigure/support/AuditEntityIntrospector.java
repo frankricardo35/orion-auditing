@@ -1,6 +1,7 @@
 package io.orion.audit.autoconfigure.support;
 
 import io.orion.audit.autoconfigure.properties.AuditProperties;
+import io.orion.audit.autoconfigure.properties.EntityTypeFormat;
 import io.orion.audit.core.annotation.Audited;
 import io.orion.audit.core.util.AuditReflectionUtils;
 
@@ -81,7 +82,7 @@ public class AuditEntityIntrospector {
 
         return Optional.of(new AuditEntityDescriptor(
             entityClass,
-            entityClass.getName(),
+            properties.getEntityTypeFormat() == EntityTypeFormat.SIMPLE ? entityClass.getSimpleName() : entityClass.getName(),
             entityName,
             actions,
             audited.storeFullSnapshot() || properties.isStoreFullSnapshot(),

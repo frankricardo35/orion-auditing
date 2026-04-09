@@ -3,6 +3,7 @@ package io.orion.audit.autoconfigure.config;
 import io.orion.audit.autoconfigure.OrionAuditAutoConfiguration;
 import io.orion.audit.autoconfigure.properties.AuditDriverType;
 import io.orion.audit.autoconfigure.properties.AuditProperties;
+import io.orion.audit.autoconfigure.properties.EntityTypeFormat;
 import io.orion.audit.autoconfigure.support.AuditListenerModeResolver;
 import io.orion.audit.core.model.AuditListenerMode;
 import io.orion.audit.core.spi.ActorResolver;
@@ -48,6 +49,7 @@ class AuditAutoConfigurationTest {
         contextRunner
             .withPropertyValues(
                 "orion.audit.listener-mode=jpa",
+                "orion.audit.entity-type-format=simple",
                 "orion.audit.drivers[0]=logging",
                 "orion.audit.actors[0].type=users",
                 "orion.audit.actors[0].principal-class=com.example.auth.UserPrincipal",
@@ -60,6 +62,7 @@ class AuditAutoConfigurationTest {
             .run(context -> {
                 AuditProperties properties = context.getBean(AuditProperties.class);
                 assertThat(properties.getListenerMode()).isEqualTo(AuditListenerMode.JPA);
+                assertThat(properties.getEntityTypeFormat()).isEqualTo(EntityTypeFormat.SIMPLE);
                 assertThat(properties.getDrivers()).containsExactly(AuditDriverType.LOGGING);
                 assertThat(properties.isDatabaseDriverEnabled()).isFalse();
                 assertThat(properties.isLoggingDriverEnabled()).isTrue();
@@ -79,6 +82,7 @@ class AuditAutoConfigurationTest {
         contextRunner.run(context -> {
             AuditProperties properties = context.getBean(AuditProperties.class);
             assertThat(properties.getListenerMode()).isEqualTo(AuditListenerMode.AUTO);
+            assertThat(properties.getEntityTypeFormat()).isEqualTo(EntityTypeFormat.QUALIFIED);
             assertThat(properties.isDatabaseDriverEnabled()).isTrue();
             assertThat(properties.isLoggingDriverEnabled()).isFalse();
             assertThat(properties.getActors()).isEmpty();

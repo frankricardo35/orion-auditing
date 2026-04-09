@@ -3,6 +3,7 @@ package io.orion.audit.autoconfigure.resolver;
 import io.orion.audit.core.model.RequestInfo;
 import io.orion.audit.core.spi.RequestInfoResolver;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.MDC;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -45,12 +46,32 @@ public class ServletRequestInfoResolver implements RequestInfoResolver {
     }
 
     private String resolveTraceId(HttpServletRequest request) {
-        for (String header : new String[]{"traceparent", "X-B3-TraceId", "X-Trace-Id"}) {
+        for (String header : new String[]{"traceparent", "X-B3-TraceId", "X-Trace-Id", "X-Request-Id"}) {
             String value = request.getHeader(header);
+            if (value != null && !value.isBlank()) {
+                return "traceparent".equalsIgnoreCase(header) ? parseTraceParent(value) : value;
+            }
+        }
+        for (String attribute : new String[]{"traceId", "trace_id"}) {
+            Object value = request.getAttribute(attribute);
+            if (value != null && !String.valueOf(value).isBlank()) {
+                return String.valueOf(value);
+            }
+        }
+        for (String key : new String[]{"traceId", "trace_id"}) {
+            String value = MDC.get(key);
             if (value != null && !value.isBlank()) {
                 return value;
             }
         }
         return null;
+    }
+
+    private String parseTraceParent(String traceParent) {
+        String[] parts = traceParent.split("-");
+        if (parts.length >= 4 && !parts[1].isBlank()) {
+            return parts[1];
+        }
+        return traceParent;
     }
 }

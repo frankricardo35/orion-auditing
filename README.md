@@ -48,6 +48,8 @@ If you add the starter and annotate an entity:
 - Spring Security actor resolution is used when available
 - actor rows store `actor_id`, `actor_name`, and `actor_type`
 - HTTP request metadata is captured when available
+- trace id is resolved from common tracing headers and MDC when available
+- tenant id is resolved from request headers, security principal, or MDC when available
 - Hibernate listener mode is used when Hibernate is present
 
 The normal happy path should work without extra setup.
@@ -228,6 +230,7 @@ orion.audit.store-empty-changes=false
 orion.audit.fail-on-error=false
 orion.audit.use-spring-security=true
 orion.audit.capture-request-info=true
+orion.audit.entity-type-format=qualified
 orion.audit.default-source=application
 orion.audit.prefer-json-column=true
 ```
@@ -246,6 +249,7 @@ orion:
     fail-on-error: false
     use-spring-security: true
     capture-request-info: true
+    entity-type-format: qualified
     default-source: application
     prefer-json-column: true
 ```
@@ -272,6 +276,7 @@ orion.audit.table-name=audit_log
 orion.audit.listener-mode=auto
 orion.audit.use-spring-security=true
 orion.audit.capture-request-info=true
+orion.audit.entity-type-format=qualified
 orion.audit.default-source=application
 orion.audit.prefer-json-column=true
 ```
@@ -298,6 +303,7 @@ orion:
     listener-mode: auto
     use-spring-security: true
     capture-request-info: true
+    entity-type-format: qualified
     default-source: application
     prefer-json-column: true
 ```
@@ -320,6 +326,7 @@ orion.audit.table-name=audit_log
 orion.audit.listener-mode=auto
 orion.audit.use-spring-security=true
 orion.audit.capture-request-info=true
+orion.audit.entity-type-format=qualified
 orion.audit.default-source=application
 orion.audit.prefer-json-column=true
 ```
@@ -346,6 +353,7 @@ orion:
     listener-mode: auto
     use-spring-security: true
     capture-request-info: true
+    entity-type-format: qualified
     default-source: application
     prefer-json-column: true
 ```
@@ -369,6 +377,7 @@ orion.audit.table-name=audit_log
 orion.audit.listener-mode=auto
 orion.audit.use-spring-security=true
 orion.audit.capture-request-info=true
+orion.audit.entity-type-format=simple
 orion.audit.default-source=application
 orion.audit.prefer-json-column=false
 ```
@@ -398,6 +407,7 @@ orion:
     listener-mode: auto
     use-spring-security: true
     capture-request-info: true
+    entity-type-format: simple
     default-source: application
     prefer-json-column: false
 ```
@@ -440,6 +450,14 @@ orion.audit.listener-mode=jpa
 ```properties
 orion.audit.listener-mode=hibernate
 ```
+
+### Store simple entity type names
+
+```properties
+orion.audit.entity-type-format=simple
+```
+
+This stores `User` instead of `com.example.auth.User`.
 
 ### Write to database and application logs
 
@@ -531,6 +549,7 @@ Notes:
 - `id-property` is the bean property path used for `actor_id`
 - `name-property` is the bean property path used for `actor_name`
 - `tenant-id-property` is optional and can be used to populate tenant context from the principal
+- if no custom tenant resolver is registered, the library also checks request headers, request attributes, security principal fields, and MDC for tenant values
 - if you do not configure actors, the library keeps the fallback behavior and uses `authentication.getName()`
 - if you configure one actor mapping without `principal-class`, that mapping acts as a default mapping for any authenticated principal
 
@@ -588,10 +607,16 @@ spring.flyway.locations=classpath:db/migration,classpath:META-INF/orion-audit/db
 | `orion.audit.ignored-fields` | empty | Globally ignored field names |
 | `orion.audit.use-spring-security` | `true` | Resolve actor from Spring Security when available |
 | `orion.audit.capture-request-info` | `true` | Capture URI, method, IP, user agent, and trace id |
+| `orion.audit.entity-type-format` | `QUALIFIED` | Store `entity_type` as the fully qualified class name or the simple class name |
 | `orion.audit.default-source` | `application` | Default source label |
 | `orion.audit.prefer-json-column` | `true` | Prefer JSON-capable database column types when supported |
 | `orion.audit.initialize-schema` | `true` | Create the audit table automatically if missing |
 | `orion.audit.ddl-auto` | `none` | Optional Hibernate DDL override hook |
+
+Supported `entity-type-format` values:
+
+- `QUALIFIED`
+- `SIMPLE`
 
 ### Driver properties
 
@@ -684,6 +709,12 @@ Each audit row contains:
 - `tenant_id`
 - `tags`
 - `created_at`
+
+By default:
+
+- `entity_type` is the fully qualified class name unless you set `orion.audit.entity-type-format=simple`
+- `trace_id` is resolved from `traceparent`, `X-B3-TraceId`, `X-Trace-Id`, `X-Request-Id`, request attributes, or MDC
+- `tenant_id` is resolved from custom tenant resolvers first, then common request, security, and MDC sources
 
 ## Reading Audit Records
 
@@ -832,6 +863,39 @@ If you want Flyway to manage the table instead, include the library migration lo
 Configure `orion.audit.actors` and map each Spring Security principal class to the stored `actor_type`, `actor_id`, and `actor_name`.
 
 If your table already exists, no schema change is required because the actor columns already exist.
+
+### tenant_id is always null
+
+The library now tries tenant resolution in this order:
+
+- any custom `TenantResolver` bean
+- request headers such as `X-Tenant-Id`
+- request attributes such as `tenantId`
+- Spring Security principal properties such as `tenantId`
+- MDC keys such as `tenantId`
+
+If your application uses a different tenant source, register a custom `TenantResolver`.
+
+### trace_id is always null
+
+The library checks these by default:
+
+- `traceparent`
+- `X-B3-TraceId`
+- `X-Trace-Id`
+- `X-Request-Id`
+- request attributes `traceId` and `trace_id`
+- MDC keys `traceId` and `trace_id`
+
+If your tracing stack stores the id somewhere else, provide a custom `RequestInfoResolver`.
+
+### I want entity_type to be User instead of the full package name
+
+Set:
+
+```properties
+orion.audit.entity-type-format=simple
+```
 
 ### Audits are not being written
 

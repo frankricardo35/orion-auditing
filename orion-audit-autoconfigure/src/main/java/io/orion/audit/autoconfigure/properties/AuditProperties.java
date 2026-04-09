@@ -32,6 +32,7 @@ public class AuditProperties {
     private boolean preferJsonColumn = true;
     private boolean initializeSchema = true;
     private String ddlAuto = "none";
+    private EntityTypeFormat entityTypeFormat = EntityTypeFormat.QUALIFIED;
     private List<Actor> actors = new ArrayList<>();
     private Flyway flyway = new Flyway();
 
@@ -169,6 +170,14 @@ public class AuditProperties {
 
     public void setDdlAuto(String ddlAuto) {
         this.ddlAuto = ddlAuto;
+    }
+
+    public EntityTypeFormat getEntityTypeFormat() {
+        return entityTypeFormat;
+    }
+
+    public void setEntityTypeFormat(EntityTypeFormat entityTypeFormat) {
+        this.entityTypeFormat = entityTypeFormat;
     }
 
     public List<Actor> getActors() {

@@ -1,6 +1,7 @@
 package io.orion.audit.autoconfigure.service;
 
 import io.orion.audit.autoconfigure.properties.AuditProperties;
+import io.orion.audit.autoconfigure.properties.EntityTypeFormat;
 import io.orion.audit.autoconfigure.resolver.DefaultEntityIdResolver;
 import io.orion.audit.autoconfigure.resolver.NoopActorResolver;
 import io.orion.audit.autoconfigure.resolver.NoopRequestInfoResolver;
@@ -56,6 +57,17 @@ class AuditSupportTest {
         assertThat(result.oldValues()).containsEntry("name", "before");
         assertThat(result.newValues()).containsEntry("name", "after");
         assertThat(result.changedFields()).containsKey("name");
+    }
+
+    @Test
+    void shouldUseSimpleEntityTypeWhenConfigured() {
+        AuditProperties properties = new AuditProperties();
+        properties.setEntityTypeFormat(EntityTypeFormat.SIMPLE);
+        AuditEntityIntrospector introspector = new AuditEntityIntrospector(properties);
+
+        AuditEntityDescriptor descriptor = introspector.getDescriptor(SampleEntity.class).orElseThrow();
+
+        assertThat(descriptor.entityType()).isEqualTo("SampleEntity");
     }
 
     @Test

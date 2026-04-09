@@ -118,6 +118,12 @@
       "description": "Optional Hibernate DDL override."
     },
     {
+      "name": "orion.audit.entity-type-format",
+      "type": "io.orion.audit.autoconfigure.properties.EntityTypeFormat",
+      "defaultValue": "QUALIFIED",
+      "description": "Controls whether entity_type stores the fully qualified class name or the simple class name."
+    },
+    {
       "name": "orion.audit.actors",
       "type": "java.util.List<io.orion.audit.autoconfigure.properties.AuditProperties$Actor>",
       "description": "Optional polymorphic actor mappings used by the Spring Security actor resolver."
@@ -180,6 +186,13 @@
         { "value": "AUTO" },
         { "value": "HIBERNATE" },
         { "value": "JPA" }
+      ]
+    },
+    {
+      "name": "orion.audit.entity-type-format",
+      "values": [
+        { "value": "QUALIFIED" },
+        { "value": "SIMPLE" }
       ]
     },
     {
